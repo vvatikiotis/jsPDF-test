@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+<!-- npx browser-sync start --server --files "*.*" -->
 
 <head>
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -26,13 +27,28 @@
 -->
 
 <body style="color:red">
-  jsPDF test
+  <h3>
+    jsPDF test
+  </h3>
+
+  <div>
+    <button onclick='export2PdfHtml2Canvas(pdf)'>Open PDF - html2canvas</button>
+  </div>
+
+  <div>
+    <button onclick='html2pdf(document.body, pdf, cb)'>Open PDF - html2pdf</button>
+  </div>
 
   <script type='text/babel'>
-    function export2Pdf() {
       const pdf = new jsPDF('p', 'pt', 'letter');
-      pdf.canvas.width = 8.5 * 72;
+      pdf.canvas.height = 72 * 11;
+      pdf.canvas.width = 72 * 8.5;
       pdf.canvas.style = {};
+
+      function export2PdfHtml2Canvas(pdf) {
+      // const pdf = new jsPDF('p', 'pt', 'letter');
+      // pdf.canvas.width = 8.5 * 72;
+      // pdf.canvas.style = {};
       const _canvas = pdf.canvas;
 
       html2canvas(document.body, { canvas: _canvas }).then(function (canvas) {
@@ -55,11 +71,114 @@
         nw.document.body.appendChild(button)
 
         nw.document.body.appendChild(iframe);
-
       });
     };
 
-    export2Pdf()
+
+function html2pdf (html,pdf,callback) {
+	var canvas = pdf.canvas;
+	if (!canvas) {
+		alert('jsPDF canvas plugin not installed');
+		return;
+	}
+	canvas.pdf = pdf;
+	pdf.annotations = {
+
+		_nameMap : [],
+
+		createAnnotation : function(href,bounds) {
+			var x = pdf.context2d._wrapX(bounds.left);
+			var y = pdf.context2d._wrapY(bounds.top);
+			var page = pdf.context2d._page(bounds.top);
+			var options;
+			var index = href.indexOf('#');
+			if (index >= 0) {
+				options = {
+					name : href.substring(index + 1)
+				};
+			} else {
+				options = {
+					url : href
+				};
+			}
+			pdf.link(x, y, bounds.right - bounds.left, bounds.bottom - bounds.top, options);
+		},
+
+		setName : function(name,bounds) {
+			var x = pdf.context2d._wrapX(bounds.left);
+			var y = pdf.context2d._wrapY(bounds.top);
+			var page = pdf.context2d._page(bounds.top);
+			this._nameMap[name] = {
+				page : page,
+				x : x,
+				y : y
+			};
+		}
+
+	};
+	canvas.annotations = pdf.annotations;
+
+	pdf.context2d._pageBreakAt = function(y) {
+		this.pageBreaks.push(y);
+	};
+
+	pdf.context2d._gotoPage = function(pageOneBased) {
+		while (pdf.internal.getNumberOfPages() < pageOneBased) {
+			pdf.addPage();
+		}
+		pdf.setPage(pageOneBased);
+	}
+
+	if (typeof html === 'string') {
+		// remove all scripts
+		html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+		var iframe = document.createElement('iframe');
+		//iframe.style.width = canvas.width;
+		//iframe.src = "";
+		//iframe.document.domain =
+		document.body.appendChild(iframe);
+		var doc;
+		doc = iframe.contentDocument;
+		if (doc == undefined || doc == null) {
+			doc = iframe.contentWindow.document;
+		}
+		//iframe.setAttribute('style', 'position:absolute;right:0; top:0; bottom:0; height:100%; width:500px');
+
+		doc.open();
+		doc.write(html);
+		doc.close();
+
+		var promise = html2canvas(doc.body, {canvas : canvas}).then(function(canvas) {
+				if (callback) {
+					if (iframe) {
+						iframe.parentElement.removeChild(iframe);
+					}
+					callback(pdf);
+				}
+			}
+		);
+
+	} else {
+		var body = html;
+		var promise = html2canvas(body, {canvas : canvas }).then(function(canvas) {
+				if (callback) {
+					if (iframe) {
+						iframe.parentElement.removeChild(iframe);
+					}
+					callback(pdf);
+				}
+			}
+		);
+	}
+}
+
+  function cb(pdfDoc) {
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('style','position:absolute;right:0; top:0; bottom:0; height:100%; width:500px');
+        document.body.appendChild(iframe);
+        iframe.src = pdfDoc.output('datauristring');
+  }
   </script>
 </body>
 

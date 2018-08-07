@@ -9,10 +9,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "browser-sync": "^2.24.6",
     "jspdf": "^1.4.1"
   },
   "devDependencies": {
+    "browser-sync": "^2.24.6",
     "http-server": "^0.11.1"
   }
 }
