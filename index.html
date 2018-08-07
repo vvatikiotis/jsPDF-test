@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>jsPDF test</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"></script>
+
+  <script src="https://unpkg.com/jspdf/dist/jspdf.debug.js"></script>
+  <script src="https://unpkg.com/html2canvas@1.0.0-alpha.12/dist/html2canvas.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
+</head>
+
+<!-- https://msdn.microsoft.com/en-us/library/cc848897(v=vs.85).aspx -->
+<!--
+  data: protocol is no longer allowed in top frame
+
+  the following client side solution works for:
+  - Chrome: Native pdf button does not work so I add a Save as Button
+  - Edge: Save as Button works, however the data:application/pdf content does not
+      show
+  - IE 11: same as Edge, however the pdf document is unstyled
+-->
+
+<body style="color:red">
+  jsPDF test
+
+  <script type='text/babel'>
+    function export2Pdf() {
+      const pdf = new jsPDF('p', 'pt', 'letter');
+      pdf.canvas.width = 8.5 * 72;
+      pdf.canvas.style = {};
+      const _canvas = pdf.canvas;
+
+      html2canvas(document.body, { canvas: _canvas }).then(function (canvas) {
+        var datauri = pdf.output('datauristring');
+        console.log(datauri)
+        const nw  = window.open();
+        const iframe = nw.document.createElement('iframe')
+        // const iframe = nw.document.createElement('embed')
+
+        iframe.width = '100%'
+        iframe.height = '100%'
+        iframe.frameBorder = 0
+        iframe.style = "border: 0"
+        iframe.src = datauri
+        iframe.type = 'application/pdf'
+
+        const button = nw.document.createElement('button')
+        button.onclick = function(e) {pdf.save()}
+        button.innerText = 'SAVE PDF'
+        nw.document.body.appendChild(button)
+
+        nw.document.body.appendChild(iframe);
+
+      });
+    };
+
+    export2Pdf()
+  </script>
+</body>
+
+</html>
